@@ -1,8 +1,6 @@
 //gcc project1.c -o project1.out -I/usr/include/libxml2 -lxml2
 
 #include "stdio.h"
-#include "string.h"
-#include "stdlib.h"
 #include "libxml/parser.h"
 #include "libxml/tree.h"
 #include "split.h"
@@ -11,22 +9,24 @@
 #define KBLU  "\x1B[34m"  //BLUE
 #define KNRM  "\x1B[0m"   //BLACK
 
-static void print_element_names(xmlNode *a_node){
-  xmlNode *cur_node = NULL;
-  xmlNode *cur_attr = NULL;
-  for (cur_node = a_node; cur_node; cur_node = cur_node->next) {
-    if (cur_node->type == XML_ELEMENT_NODE) {
-      // printf("Node Type: Element, name: %s \n Its children's type is: %d \n Its children's content is: %s \n", cur_node->name, cur_node->children->type, cur_node->children->content);
-
-      printf("Node Name : %-20s", cur_node->name);
-      if(cur_node->properties != NULL){
-        // for (cur_attr = cur_node->properties; cur_attr; cur_attr = cur_attr->next) {
-        //   printf("  -> with attribute : %s\n", cur_attr->name);
-        // }
+static void xmlWalk(xmlNode *a_node){
+  xmlNode *currentNode = NULL;     //node
+  xmlAttr *NodeAttribute = NULL;   //attribute as an object
+  xmlChar *attribute;              //char or char array
+  for (currentNode = a_node; currentNode; currentNode = currentNode->next) {
+    if (currentNode->type == XML_ELEMENT_NODE) {
+      printf("Node Name : %-15s", currentNode->name);
+      if(currentNode->properties != NULL){
+        printf("\n %20s Attributes\n","");
+        for (NodeAttribute = currentNode->properties; NodeAttribute; NodeAttribute = NodeAttribute->next) {
+          printf("%s", NodeAttribute->name);
+          attribute =  xmlNodeGetContent((xmlNode*)NodeAttribute);
+          printf(" = %s\n", attribute);
+        }
       }
-      printf("Content %s\n", cur_node->children->content);
+      printf("Value = %s\n", currentNode->children->content);
     }
-    print_element_names(cur_node->children);
+    xmlWalk(currentNode->children);
   }
 }
 
@@ -34,7 +34,6 @@ void parseXML(char *xmlName){
   xmlDoc *doc = NULL;
   xmlNode *root_element = NULL;
   const char *Filename = xmlName;
-
   doc = xmlReadFile(Filename, NULL, 0);
 
   if(doc == NULL){
@@ -42,7 +41,7 @@ void parseXML(char *xmlName){
   }
   else{
     root_element = xmlDocGetRootElement(doc);
-    print_element_names(root_element);
+    xmlWalk(root_element);
     xmlFreeDoc(doc);
   }
   xmlCleanupParser();
@@ -54,46 +53,52 @@ void help(){
   printf("%s\n","2- 'chartgen -o <output filename>'");
   printf("%s\n","3- 'chartgen -v <xsd validation file>'");
   printf("%s\n","4- 'chartgen -t <type>'");
-  printf("%s\n","5- 'clear'");
 }
 
-void menu(){
-  char command[100];
+void menu(const char *commands[]){
   char *parsedInput[50];
-  printf("%s%s%s",KRED,"COMMAND > ", KNRM);
-  scanf("%49[^\n]%*c", command);
-  parsing(parsedInput, command, " ");
+  int i = 0;
 
-  if(strcmp(parsedInput[0],"chartgen") == 0){ //command must start with chartgen
-    if(strcmp(parsedInput[1],"-h") == 0){ //if our second letter is -h
-      help();  //goes to help function
+  for (i = 0; i < sizeof(commands); i++) {
+    if(strcmp(commands[1],"chartgen") == 0){
+      if(strcmp(commands[i],"-i") == 0){
+         parsing(parsedInput,(char *)commands[i+1],".");
+         if(strcmp(parsedInput[1],"xml")==0){
+          parseXML(strcat((char *)commands[(i+1)],".xml"));
+        }
+      }
+
+      if(strcmp(commands[i],"-o") == 0){
+        parsing(parsedInput,(char *)commands[i+1],".");
+        if(strcmp(parsedInput[1],"svg")==0){
+          printf("%s\n", "NOT READY");
+        }
+      }
+
+      if(strcmp(commands[i],"-v") == 0){
+        parsing(parsedInput,(char *)commands[i+1],".");
+        if(strcmp(parsedInput[1],"xsd")==0){
+          printf("%s\n", "NOT READY");
+        }
+      }
+
+      if(strcmp(commands[i],"-t")==0 && (strcmp(commands[i+1],"line")==0 || strcmp(commands[i+1],"pie")==0  || strcmp(commands[i+1],"bar")==0)){
+        printf("%s\n", "NOT READY");
+
+      }
+
+      if(strcmp(commands[i],"-h")==0){
+        help();
+        return;
+      }
     }
-    if(strcmp(parsedInput[1],"-i")==0){
-      parseXML(parsedInput[2]);
+    else{
+      help();
+      return;
     }
-    if(strcmp(parsedInput[1],"-o")==0){
-      printf("%s\n", "NOT READY");
-    }
-    if(strcmp(parsedInput[1],"-v")==0){
-      printf("%s\n", "NOT READY");
-    }
-    if(strcmp(parsedInput[1],"-t")==0){
-      printf("%s\n", "NOT READY");
-    }
-  }
-  else if(strcmp(parsedInput[0],"clear")==0){   //if our command is just clear
-    system("clear");  //clears
   }
 }
 
-int main(int argc, char const *argv[]) {
-  /* code */
-  int exit = 0;
-
-  printf("%s%s%s\n",KBLU,"Type 'HELP' for commands", KNRM);
-  while(exit == 0){
-    menu();
-  }
-
-  return 0;
+void main(int argc, char const *argv[]) {
+  menu(argv);
 }
