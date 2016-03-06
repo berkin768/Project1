@@ -1,0 +1,80 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name= "chartgendata">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name= "charttitle" type="xs:string"/>
+        <xs:element name="canvas">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="length" type="xs:positiveInteger"/>
+              <xs:element name="width" type="xs:positiveInteger"/>
+              <xs:element name="backcolor" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Yaxis">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="name" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Xaxis">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="name" type="xs:string"/>
+              <xs:element name="forecolor" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Xset">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="xdata" type="xs:string"/>
+              <xs:element name="xdata" type="xs:string"/>
+              <xs:element name="xdata" type="xs:string"/>
+              <xs:element name="xdata" type="xs:string"/>
+              <xs:element name="xdata" type="xs:string"/>
+              <xs:element name="xdata" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Yset">
+
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int"/>
+            </xs:sequence>
+            <xs:attribute name="unit" type="xs:string" use="optional"/>
+            <xs:attribute name="name" type="xs:string" use="optional"/>
+            <xs:attribute name="showvalue" type="xs:string" use="optional"/>
+            <xs:attribute name="fillcolor" type="xs:string" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="Yset">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int"/>
+            </xs:sequence>
+            <xs:attribute name="unit" type="xs:string" use="optional"/>
+            <xs:attribute name="name" type="xs:string" use="optional"/>
+            <xs:attribute name="showvalue" type="xs:string" use="optional"/>
+            <xs:attribute name="fillcolor" type="xs:string" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

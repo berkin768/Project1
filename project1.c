@@ -4,10 +4,24 @@
 #include "libxml/parser.h"
 #include "libxml/tree.h"
 #include "split.h"
+#include "libxml/xmlschemastypes.h"
 
 #define KRED  "\x1B[31m"  //RED
 #define KBLU  "\x1B[34m"  //BLUE
 #define KNRM  "\x1B[0m"   //BLACK
+
+void xsdValidation(char *xsdName, char *xmlName){
+  const char *xmlLint = "xmllint --noout --schema ";
+
+  char *terminalCommand = malloc(strlen(xmlLint) + strlen(xsdName) + strlen(xmlName) + 1);
+  if(terminalCommand != NULL){
+    strcpy(terminalCommand, xmlLint); /* use strcpy() here to initialize the result buffer */
+    strcat(terminalCommand, xsdName);
+    strcat(terminalCommand, " ");
+    strcat(terminalCommand, xmlName);
+    system(terminalCommand);
+  }
+}
 
 static void xmlWalk(xmlNode *a_node){
   xmlNode *currentNode = NULL;     //node
@@ -56,15 +70,19 @@ void help(){
 }
 
 void menu(const char *commands[]){
-  char *parsedInput[50];
+  char *xmlName;
+  char *xsdName;
+  char **parsedInput;
   int i = 0;
 
   for (i = 0; i < sizeof(commands); i++) {
     if(strcmp(commands[1],"chartgen") == 0){
       if(strcmp(commands[i],"-i") == 0){
-         parsing(parsedInput,(char *)commands[i+1],".");
-         if(strcmp(parsedInput[1],"xml")==0){
-          parseXML(strcat((char *)commands[(i+1)],".xml"));
+        parsing(parsedInput,(char *)commands[i+1],".");
+        if(strcmp(parsedInput[1],"xml")==0){
+          xmlName = malloc(strlen((char *)commands[(i+1)]) + 5);
+          strcpy(xmlName, strcat((char *)commands[(i+1)],".xml"));
+          parseXML(xmlName);
         }
       }
 
@@ -78,7 +96,11 @@ void menu(const char *commands[]){
       if(strcmp(commands[i],"-v") == 0){
         parsing(parsedInput,(char *)commands[i+1],".");
         if(strcmp(parsedInput[1],"xsd")==0){
-          printf("%s\n", "NOT READY");
+          xsdName = malloc(strlen((char *)commands[(i+1)]) + 5);
+          strcpy(xsdName, strcat((char *)commands[(i+1)],".xsd"));
+          xsdValidation(xsdName,xmlName);
+          free(xsdName);
+          free(xmlName);
         }
       }
 
@@ -99,6 +121,7 @@ void menu(const char *commands[]){
   }
 }
 
-void main(int argc, char const *argv[]) {
+int main(int argc, char const *argv[]) {
   menu(argv);
+  return 0;
 }
