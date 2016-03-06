@@ -2,7 +2,7 @@
 #include "string.h"
 #include "stdlib.h"
 
-void parsing(char *parsedInput[100],char *string, char *parseType){//can be changed, in order of OUTPUT, INPUT, PARSING TYPE
+void parsing(char **parsedInput,char *string, char parseType){//can be changed, in order of OUTPUT, INPUT, PARSING TYPE
     int i = 0;     //index of output
     char *temp = string;
     char *token = strtok(temp, parseType);  //output words from input
