@@ -44,9 +44,17 @@ struct canvas svg_canvas;
 struct Yaxis svg_yaxis;
 struct Xaxis svg_xaxis;
 struct Xset svg_xset;
-struct Yset svg_yset;
+struct Yset svg_yset1;
+struct Yset svg_yset2;
 
-void createSvg(char *svgName){
+int xmlFlag = 0;
+int xsdFlag = 0;
+int SVGEntered = 0;
+int circleSVG = 0;
+int barSVG = 0;
+int lineSVG = 0;
+
+void createCircleSVG(char *svgName){
   xmlDocPtr svg = NULL;
   xmlNodePtr body = NULL;
   xmlNodePtr charttitle = NULL, canvas = NULL, yaxis = NULL, xaxis = NULL, xset = NULL, yset = NULL;
@@ -77,26 +85,24 @@ void createSvg(char *svgName){
   xmlNewProp(charttitle, BAD_CAST "x", BAD_CAST "10");
   xmlNewProp(charttitle, BAD_CAST "y", BAD_CAST "130");
 
-
   htmlSaveFileEnc(svgName, svg, "UTF-­8", 1);
-
-  //free the document
 
   xmlFreeDoc(svg);
 
 }
 
 void xsdValidation(char *xsdName, char *xmlName){
-  char *xmlLint = malloc (30);
+  char xmlLint[30];
   strcpy(xmlLint,"xmllint --noout --schema ");
 
-  char *terminalCommand = malloc(strlen(xmlLint) + strlen(xsdName) + strlen(xmlName) + 1);
+  char *terminalCommand = malloc(strlen(xmlLint) + strlen(xsdName) + strlen(xmlName) + 2);
   if(terminalCommand != NULL){
     strcpy(terminalCommand, xmlLint); /* use strcpy() here to initialize the result buffer */
     strcat(terminalCommand, xsdName);
     strcat(terminalCommand, " ");
     strcat(terminalCommand, xmlName);
     system(terminalCommand);
+    free(terminalCommand);
   }
 }
 
@@ -138,7 +144,7 @@ static void xmlWalk(xmlNode *a_node){
 void parseXML(char *xmlName){
   xmlDoc *doc = NULL;
   xmlNode *root_element = NULL;
-  const char *Filename = xmlName;
+  char *Filename = xmlName;
   doc = xmlReadFile(Filename, NULL, 0);
 
   if(doc == NULL){
@@ -166,54 +172,86 @@ void menu(int size, char *commands[]){
   char *svgName;
   char **parsedInput = malloc(100);
 
-  int i = 0;
+  int index[5];
+  int i = 0;   //for's i
 
   for (i = 1; i < size; i++) {
     if(strcmp(commands[1],"chartgen") == 0){
       if(strcmp(commands[i],"-i") == 0){
-        // parsing(parsedInput,commands[i+1],".");
-        // if(strcmp(parsedInput[1],"xml")==0){
-          xmlName = malloc(strlen(commands[(i+1)]) + 10);
-          strcpy(xmlName, strcat(commands[(i+1)],".xml"));
-          parseXML(xmlName);
-      //  }
+        parsing(parsedInput,commands[i+1],".");
+        if(strcmp(parsedInput[1],"xml")==0){
+          xmlFlag = 1;
+          index[0] = i+1;
+        }
       }
 
       if(strcmp(commands[i],"-v") == 0){
-        // parsing(parsedInput,commands[i+1],".");
-        // if(strcmp(parsedInput[1],"xsd")==0){
-          xsdName = malloc(strlen(commands[(i+1)]) + 10);
-          strcpy(xsdName, strcat(commands[(i+1)],".xsd"));
-          xsdValidation(xsdName,xmlName);
-           free(xsdName);
-           free(xmlName);
-        //}
+        parsing(parsedInput,commands[i+1],".");
+        if(strcmp(parsedInput[1],"xsd")==0){
+          xsdFlag = 1;
+          index[1] = i+1;
+        }
       }
 
       if(strcmp(commands[i],"-o") == 0){
-        // parsing(parsedInput,commands[i+1],".");
-        // if(strcmp(parsedInput[1],"svg") == 0){
-          svgName = malloc(strlen(commands[i+1]) + 10);
-          strcpy(svgName, strcat(commands[i+1],".svg"));
-          createSvg(svgName);
-          free(svgName);
-        //}
+        parsing(parsedInput,commands[i+1],".");
+        if(strcmp(parsedInput[1],"svg") == 0){
+          SVGEntered = 1;
+          index[2] = i+1;
+        }
       }
 
-      if(strcmp(commands[i],"-t")==0 && (strcmp(commands[i+1],"line")==0 || strcmp(commands[i+1],"pie")==0  || strcmp(commands[i+1],"bar")==0)){
-        printf("%s\n", "NOT READY");
+      if(strcmp(commands[i],"-t")==0){
+        if(strcmp(commands[i+1],"line")==0){
+          printf("%s\n", "NOT READY");
+        }
+        if(strcmp(commands[i+1],"pie")==0){
+          circleSVG = 1;
+        }
+        if(strcmp(commands[i+1],"bar")==0){
+          printf("%s\n", "NOT READY");
+        }
       }
 
       if(strcmp(commands[i],"-h")==0){
         help();
-        return;
       }
     }
-    else{
-      help();
-      return;
-    }
   }
+
+  //XML OPERATIONS
+  if(xmlFlag == 1){
+    xmlName = malloc(strlen(commands[index[0]]) + 10);
+    strcpy(xmlName, commands[index[0]]);
+    parseXML(xmlName);
+  }
+  //XSD OPERATIONS
+  if(xmlFlag == 1 && xsdFlag == 1){
+    xsdName = malloc(strlen(commands[index[1]]) + 10);
+    strcpy(xsdName, commands[index[1]]);
+    xsdValidation(xsdName,xmlName);
+    free(xsdName);
+    free(xmlName);
+  }
+  //SVG OPERATIONS
+  if(circleSVG == 1 && SVGEntered == 1){
+    svgName = malloc(strlen(commands[index[2]]) + 10);
+    strcpy(svgName, commands[index[2]]);
+    createCircleSVG(svgName);
+    free(svgName);
+  }
+
+  if(xmlFlag == 0 || xsdFlag == 0){
+    printf("%s\n", "There is some error xml or xsd process. Please check your input");
+    printf("%s\n", "Check that you have given the XML in the code. XSD checks XML, if it isn't NULL\n");
+    help();
+  }
+  if(SVGEntered == 0 || circleSVG == 0){
+    printf("%s\n", "Please give a output name with -o command");
+    printf("%s\n", "If you given -o command, please check your input's -t part\n");
+    help();
+  }
+  free(parsedInput);
 }
 
 int main(int argc, char *argv[]) {

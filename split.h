@@ -5,7 +5,7 @@
 void parsing(char **parsedInput,char *string, char *parseType){//can be changed, in order of OUTPUT, INPUT, PARSING TYPE
     int i = 0;     //index of output
     char *temp = malloc(strlen(string)+1);
-    temp = string;
+    strcpy(temp,string);
     char *token = strtok(temp, parseType);  //output words from input
     
     while(token != NULL){  

@@ -30,40 +30,14 @@
         <xs:element name="Xset">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="xdata" type="xs:string"/>
-              <xs:element name="xdata" type="xs:string"/>
-              <xs:element name="xdata" type="xs:string"/>
-              <xs:element name="xdata" type="xs:string"/>
-              <xs:element name="xdata" type="xs:string"/>
-              <xs:element name="xdata" type="xs:string"/>
+              <xs:element name="xdata" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="Yset">
+        <xs:element name="Yset" minOccurs="1" maxOccurs="unbounded">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="ydata" type="xs:int"/>
-              <xs:element name="ydata" type="xs:int"/>
-              <xs:element name="ydata" type="xs:int"/>
-              <xs:element name="ydata" type="xs:int"/>
-              <xs:element name="ydata" type="xs:int"/>
-              <xs:element name="ydata" type="xs:int"/>
-            </xs:sequence>
-            <xs:attribute name="unit" type="xs:string" use="optional"/>
-            <xs:attribute name="name" type="xs:string" use="optional"/>
-            <xs:attribute name="showvalue" type="xs:string" use="optional"/>
-            <xs:attribute name="fillcolor" type="xs:string" use="optional"/>
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="Yset">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="ydata" type="xs:int"/>
-              <xs:element name="ydata" type="xs:int"/>
-              <xs:element name="ydata" type="xs:int"/>
-              <xs:element name="ydata" type="xs:int"/>
-              <xs:element name="ydata" type="xs:int"/>
-              <xs:element name="ydata" type="xs:int"/>
+              <xs:element name="ydata" type="xs:int" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
             <xs:attribute name="unit" type="xs:string" use="optional"/>
             <xs:attribute name="name" type="xs:string" use="optional"/>
