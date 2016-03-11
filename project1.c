@@ -167,7 +167,7 @@ void help(){
   printf("%s\n","4- 'chartgen -t <type>'");
 }
 
-void menu(int size, char *commands[]){
+int main(int argc, char *argv[]) {
   char *xmlName;
   char *xsdName;
   char *svgName;
@@ -175,48 +175,48 @@ void menu(int size, char *commands[]){
 
   int i = 0;   //for's i
 
-  for (i = 1; i < size; i++) {
-    if(strcmp(commands[1],"chartgen") == 0){
-      if(strcmp(commands[i],"-i") == 0){
-        parsing(parsedInput,commands[i+1],".");
+  for (i = 1; i < argc; i++) {
+    if(strcmp(argv[1],"chartgen") == 0){
+      if(strcmp(argv[i],"-i") == 0){
+        parsing(parsedInput,argv[i+1],".");
         if(strcmp(parsedInput[1],"xml")==0){
-          xmlName = malloc(strlen(commands[i+1]) + 10);
-          strcpy(xmlName, commands[i+1]);
+          xmlName = malloc(strlen(argv[i+1]) + 10);
+          strcpy(xmlName, argv[i+1]);
           xmlFlag = TRUE;
         }
       }
 
-      if(strcmp(commands[i],"-v") == 0){
-        parsing(parsedInput,commands[i+1],".");
+      if(strcmp(argv[i],"-v") == 0){
+        parsing(parsedInput,argv[i+1],".");
         if(strcmp(parsedInput[1],"xsd")==0){
-          xsdName = malloc(strlen(commands[i+1]) + 10);
-          strcpy(xsdName, commands[i+1]);
+          xsdName = malloc(strlen(argv[i+1]) + 10);
+          strcpy(xsdName, argv[i+1]);
           xsdFlag = TRUE;
         }
       }
 
-      if(strcmp(commands[i],"-o") == 0){
-        parsing(parsedInput,commands[i+1],".");
+      if(strcmp(argv[i],"-o") == 0){
+        parsing(parsedInput,argv[i+1],".");
         if(strcmp(parsedInput[1],"svg") == 0){
-          svgName = malloc(strlen(commands[i+1]) + 10);
-          strcpy(svgName, commands[i+1]);
+          svgName = malloc(strlen(argv[i+1]) + 10);
+          strcpy(svgName, argv[i+1]);
           SVGEntered = TRUE;
         }
       }
 
-      if(strcmp(commands[i],"-t")==0){
-        if(strcmp(commands[i+1],"line")==0){
+      if(strcmp(argv[i],"-t")==0){
+        if(strcmp(argv[i+1],"line")==0){
           printf("%s\n", "NOT READY");
         }
-        if(strcmp(commands[i+1],"pie")==0){
+        if(strcmp(argv[i+1],"pie")==0){
           circleSVG = 1;
         }
-        if(strcmp(commands[i+1],"bar")==0){
+        if(strcmp(argv[i+1],"bar")==0){
           printf("%s\n", "NOT READY");
         }
       }
 
-      if(strcmp(commands[i],"-h")==0){
+      if(strcmp(argv[i],"-h")==0){
         help();
       }
     }
@@ -251,9 +251,5 @@ void menu(int size, char *commands[]){
     help();
   }
   free(parsedInput);
-}
-
-int main(int argc, char *argv[]) {
-  menu(argc,argv);
   return 0;
 }
