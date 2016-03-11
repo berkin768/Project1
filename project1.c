@@ -1,15 +1,16 @@
 //gcc project1.c -o project1.out -I/usr/include/libxml2 -lxml2
+//./project1.out chartgen -v validation.xsd -i chartgendata.xml -o abc.svg -t pie
 
 #include "stdio.h"
 #include "libxml/xmlschemastypes.h"
 #include "libxml/parser.h"
 #include "libxml/tree.h"
 #include "split.h"
-#include "string.h"
 
-#define KRED  "\x1B[31m"  //RED
 #define KBLU  "\x1B[34m"  //BLUE
 #define KNRM  "\x1B[0m"   //BLACK
+#define TRUE 1
+#define FALSE 0
 
 char *chartTitle;
 
@@ -47,12 +48,12 @@ struct Xset svg_xset;
 struct Yset svg_yset1;
 struct Yset svg_yset2;
 
-int xmlFlag = 0;
-int xsdFlag = 0;
-int SVGEntered = 0;
-int circleSVG = 0;
-int barSVG = 0;
-int lineSVG = 0;
+int xmlFlag = FALSE;
+int xsdFlag = FALSE;
+int SVGEntered = FALSE;
+int circleSVG = FALSE;
+int barSVG = FALSE;
+int lineSVG = FALSE;
 
 void createCircleSVG(char *svgName){
   xmlDocPtr svg = NULL;
@@ -172,7 +173,6 @@ void menu(int size, char *commands[]){
   char *svgName;
   char **parsedInput = malloc(100);
 
-  int index[5];
   int i = 0;   //for's i
 
   for (i = 1; i < size; i++) {
@@ -180,24 +180,27 @@ void menu(int size, char *commands[]){
       if(strcmp(commands[i],"-i") == 0){
         parsing(parsedInput,commands[i+1],".");
         if(strcmp(parsedInput[1],"xml")==0){
-          xmlFlag = 1;
-          index[0] = i+1;
+          xmlName = malloc(strlen(commands[i+1]) + 10);
+          strcpy(xmlName, commands[i+1]);
+          xmlFlag = TRUE;
         }
       }
 
       if(strcmp(commands[i],"-v") == 0){
         parsing(parsedInput,commands[i+1],".");
         if(strcmp(parsedInput[1],"xsd")==0){
-          xsdFlag = 1;
-          index[1] = i+1;
+          xsdName = malloc(strlen(commands[i+1]) + 10);
+          strcpy(xsdName, commands[i+1]);
+          xsdFlag = TRUE;
         }
       }
 
       if(strcmp(commands[i],"-o") == 0){
         parsing(parsedInput,commands[i+1],".");
         if(strcmp(parsedInput[1],"svg") == 0){
-          SVGEntered = 1;
-          index[2] = i+1;
+          svgName = malloc(strlen(commands[i+1]) + 10);
+          strcpy(svgName, commands[i+1]);
+          SVGEntered = TRUE;
         }
       }
 
@@ -220,33 +223,29 @@ void menu(int size, char *commands[]){
   }
 
   //XML OPERATIONS
-  if(xmlFlag == 1){
-    xmlName = malloc(strlen(commands[index[0]]) + 10);
-    strcpy(xmlName, commands[index[0]]);
+  if(xmlFlag == TRUE){
     parseXML(xmlName);
   }
   //XSD OPERATIONS
-  if(xmlFlag == 1 && xsdFlag == 1){
-    xsdName = malloc(strlen(commands[index[1]]) + 10);
-    strcpy(xsdName, commands[index[1]]);
+  if(xmlFlag == TRUE && xsdFlag == TRUE){
     xsdValidation(xsdName,xmlName);
     free(xsdName);
     free(xmlName);
   }
   //SVG OPERATIONS
-  if(circleSVG == 1 && SVGEntered == 1){
-    svgName = malloc(strlen(commands[index[2]]) + 10);
-    strcpy(svgName, commands[index[2]]);
+  if(circleSVG == TRUE && SVGEntered == TRUE){
     createCircleSVG(svgName);
     free(svgName);
   }
 
-  if(xmlFlag == 0 || xsdFlag == 0){
+  if(xmlFlag == FALSE || xsdFlag == FALSE){
+    printf("%s\n", "DONT FORGET TO WRITE CHARTGEN AT THE BEGINNING");
     printf("%s\n", "There is some error xml or xsd process. Please check your input");
     printf("%s\n", "Check that you have given the XML in the code. XSD checks XML, if it isn't NULL\n");
     help();
   }
-  if(SVGEntered == 0 || circleSVG == 0){
+  if(SVGEntered == FALSE || circleSVG == FALSE){
+    printf("%s\n", "DONT FORGET TO WRITE CHARTGEN AT THE BEGINNING");
     printf("%s\n", "Please give a output name with -o command");
     printf("%s\n", "If you given -o command, please check your input's -t part\n");
     help();
