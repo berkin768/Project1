@@ -1,1 +1,1 @@
-<body><svg xmlns="http://www.w3.org/2000/svg" height="200" width="200" fill="AABBCC"><circle cx="60" cy="60" r="50" stroke="black" stroke-width="2" fill="red"></circle><text x="10" y="130">Monthly Sales</text></svg></body>
+<body><svg xmlns="http://www.w3.org/2000/svg" height="400" width="200" fill="AABBCC"><circle cx="60" cy="60" r="50" stroke="black" stroke-width="2" fill="blue"></circle><circle cx="60" cy="210" r="50" stroke="black" stroke-width="2" fill="blue"></circle><text x="10" y="130">Monthly Sales</text></svg></body>

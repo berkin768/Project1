@@ -1,5 +1,5 @@
 <chartgendata>
-  <charttitle>DEU</charttitle>
+  <charttitle>Monthly Sales</charttitle>
   <canvas>
     <length>200</length>
     <width>200</width>
@@ -28,7 +28,7 @@
     <ydata>5600</ydata>
     <ydata>2200</ydata>
   </Yset>
-  <Yset unit="TL" name="İstanbul" showvalue="yes" fillcolor="00CCDD">
+  <Yset unit="TL" name="İstanbul" fillcolor="00CCDD">
     <ydata>9500</ydata>
     <ydata>6500</ydata>
     <ydata>11250</ydata>

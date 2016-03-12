@@ -26,27 +26,26 @@ struct Yaxis{
 
 struct Xaxis{
   char *name;
-  char *forecolor;
+  char forecolor[6];
 };
 
 struct Xset{
-  char **xData;
+  char *xData[12];  //not dynamic
 };
 
 struct Yset{
   char *unit;
   char *name;
-  char *showValue;
-  char *fillColor;
-  char *yData;
+  char showValue[3];
+  char fillColor[6];
+  char *yData[12];  //not dynamic, but it might be problem for us
 };
 
 struct canvas svg_canvas;
 struct Yaxis svg_yaxis;
 struct Xaxis svg_xaxis;
 struct Xset svg_xset;
-struct Yset svg_yset1;
-struct Yset svg_yset2;
+struct Yset svg_ysets[6];  //not dynamic
 
 int xmlFlag = FALSE;
 int xsdFlag = FALSE;
@@ -54,6 +53,10 @@ int SVGEntered = FALSE;
 int circleSVG = FALSE;
 int barSVG = FALSE;
 int lineSVG = FALSE;
+
+int ySetCounter = 0;
+int yDataCounter = 0;
+int xDataCounter = 0;
 
 void createCircleSVG(char *svgName){
   xmlDocPtr svg = NULL;
@@ -66,21 +69,32 @@ void createCircleSVG(char *svgName){
   body = xmlNewNode(NULL, BAD_CAST"body");
   xmlDocSetRootElement(svg, body);
 
+  char *height = malloc(10);
+  sprintf(height,"%d",(atoi(svg_canvas.length) * (ySetCounter+1)));
+
   canvas = xmlNewChild(body, NULL, BAD_CAST"svg", NULL);
   xmlNewProp(canvas,BAD_CAST "xmlns","http://www.w3.org/2000/svg");
-  xmlNewProp(canvas, BAD_CAST "height", svg_canvas.length);
+  xmlNewProp(canvas, BAD_CAST "height", height);
   xmlNewProp(canvas, BAD_CAST "width", svg_canvas.width);
   xmlNewProp(canvas, BAD_CAST "fill", svg_canvas.backcolor);
 
+  free(height);
 
-  canvasChild=xmlNewChild(canvas, NULL, BAD_CAST "circle", NULL);
+  int i = 0;
+  char *cy = malloc(5);
 
-  xmlNewProp(canvasChild, BAD_CAST "cx", BAD_CAST "60");
-  xmlNewProp(canvasChild, BAD_CAST "cy", BAD_CAST "60");
-  xmlNewProp(canvasChild, BAD_CAST "r", BAD_CAST "50");
-  xmlNewProp(canvasChild, BAD_CAST "stroke", BAD_CAST "black");
-  xmlNewProp(canvasChild, BAD_CAST "stroke-width", BAD_CAST "2");
-  xmlNewProp(canvasChild, BAD_CAST "fill", BAD_CAST "red");
+  for (i = 0; i <= ySetCounter; i++) {   //how many circle?
+    sprintf(cy, "%d", (60+i*150));  //dynamic y coordinate
+    canvasChild=xmlNewChild(canvas, NULL, BAD_CAST "circle", NULL);
+
+    xmlNewProp(canvasChild, BAD_CAST "cx", BAD_CAST "60");
+    xmlNewProp(canvasChild, BAD_CAST "cy", cy);
+    xmlNewProp(canvasChild, BAD_CAST "r", BAD_CAST "50");
+    xmlNewProp(canvasChild, BAD_CAST "stroke", BAD_CAST "black");
+    xmlNewProp(canvasChild, BAD_CAST "stroke-width", BAD_CAST "2");
+    xmlNewProp(canvasChild, BAD_CAST "fill", BAD_CAST "blue");
+  }
+  free(cy);
 
   charttitle = xmlNewChild(canvas, NULL, BAD_CAST "text", chartTitle);
   xmlNewProp(charttitle, BAD_CAST "x", BAD_CAST "10");
@@ -132,10 +146,58 @@ static void xmlWalk(xmlNode *a_node){
         strcpy(svg_canvas.backcolor,currentNode->children->content);
       }
 
-      if(currentNode->properties != NULL){
-        for (NodeAttribute = currentNode->properties; NodeAttribute; NodeAttribute = NodeAttribute->next) {
-          attribute =  xmlNodeGetContent((xmlNode*)NodeAttribute);
+      if(strcmp(currentNode-> name, "name") == 0 /*&& strcmp(currentNode -> next-> name, "name")==0*/){
+        if(strcmp(currentNode -> parent -> name , "Yaxis") == 0){
+          svg_yaxis.name = malloc(strlen(currentNode->children->content) + 1);
+          strcpy(svg_yaxis.name,currentNode->children->content);
         }
+        if(strcmp(currentNode -> parent -> name , "Xaxis") == 0){
+          svg_xaxis.name = malloc(strlen(currentNode->children->content) + 1);
+          strcpy(svg_xaxis.name,currentNode->children->content);
+        }
+      }
+
+      if(strcmp(currentNode->name, "forecolor")==0){
+        strcpy(svg_xaxis.forecolor,currentNode->children->content);
+      }
+
+      if(strcmp(currentNode->name, "xdata") == 0){
+        svg_xset.xData[xDataCounter] = malloc(strlen(currentNode->children->content) +1);
+        strcpy(svg_xset.xData[xDataCounter], currentNode->children->content);
+        xDataCounter++;
+      }
+
+      if(currentNode->properties != NULL){   //if the node has attribute
+        for (NodeAttribute = currentNode->properties; NodeAttribute; NodeAttribute = NodeAttribute->next) {   //search all attributes
+          attribute =  xmlNodeGetContent((xmlNode*)NodeAttribute);
+
+          if(strcmp(NodeAttribute->name, "unit") == 0){
+            svg_ysets[ySetCounter].unit = malloc(strlen((char*)attribute)+1);
+            strcpy(svg_ysets[ySetCounter].unit,(char*)attribute);
+          }
+
+          if(strcmp(NodeAttribute->name, "name") == 0){
+            svg_ysets[ySetCounter].name = malloc(strlen((char*)attribute)+1);
+            strcpy(svg_ysets[ySetCounter].name,(char*)attribute);
+          }
+          if(strcmp(NodeAttribute->name, "showvalue") == 0){
+            strcpy(svg_ysets[ySetCounter].showValue,(char*)attribute);
+          }
+          if(strcmp(NodeAttribute->name, "fillcolor") == 0){
+            strcpy(svg_ysets[ySetCounter].fillColor,(char*)attribute);
+          }
+        }
+      }
+
+      if(strcmp(currentNode->name, "ydata") == 0){
+        svg_ysets[ySetCounter].yData[yDataCounter] = malloc(strlen(currentNode->children->content)+1);
+        strcpy(svg_ysets[ySetCounter].yData[yDataCounter],currentNode->children->content);
+        yDataCounter++;
+      }
+
+      if(yDataCounter == 12){   // THIS PART IS NOT DYNAMIC
+        yDataCounter == 0;
+        ySetCounter++;
       }
     }
     xmlWalk(currentNode->children);
@@ -168,6 +230,11 @@ void help(){
 }
 
 int main(int argc, char *argv[]) {
+  int j = 0;
+
+  for (j = 0; j < 10; j++) {
+
+  }
   char *xmlName;
   char *xsdName;
   char *svgName;
