@@ -38,7 +38,7 @@ struct Yset{
   char *name;
   char showValue[3];
   char fillColor[6];
-  char *yData[12];  //not dynamic, but it might be problem for us
+  char *yData[6];  //not dynamic, but it might be problem for us
 };
 
 struct canvas svg_canvas;
@@ -70,40 +70,68 @@ void createCircleSVG(char *svgName){
   xmlDocSetRootElement(svg, body);
 
   char *height = malloc(10);
-  sprintf(height,"%d",(atoi(svg_canvas.length) * (ySetCounter+1)));
+  sprintf(height,"%d",(atoi(svg_canvas.length) * (ySetCounter+2)));
 
   canvas = xmlNewChild(body, NULL, BAD_CAST"svg", NULL);
   xmlNewProp(canvas,BAD_CAST "xmlns","http://www.w3.org/2000/svg");
   xmlNewProp(canvas, BAD_CAST "height", height);
-  xmlNewProp(canvas, BAD_CAST "width", svg_canvas.width);
+  xmlNewProp(canvas, BAD_CAST "width", height);
   xmlNewProp(canvas, BAD_CAST "fill", svg_canvas.backcolor);
 
-  free(height);
 
   int i = 0;
+  int j = 0;
+  int k = 0;
   char *cy = malloc(5);
-
+  char *xDataSetPosition = malloc(5);
+  char *yDataSetPosition = malloc(10);
   for (i = 0; i <= ySetCounter; i++) {   //how many circle?
-    sprintf(cy, "%d", (60+i*150));  //dynamic y coordinate
+
+    for (j = 0; j < xDataCounter; j++) {  //PRINT MONTHS - XDATA
+      sprintf(xDataSetPosition, "%d", ((50+j*20)+i*250));  //dynamic y coordinate
+      xset = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_xset.xData[j]);
+      xmlNewProp(xset, BAD_CAST "x", "400");
+      xmlNewProp(xset, BAD_CAST "y", xDataSetPosition);
+      xmlNewProp(xset, BAD_CAST "font-family", BAD_CAST "Verdana");
+    }
+
+    for (j = 0; j < yDataCounter; j++) {   //PRINT PRICES - YDATA
+      sprintf(yDataSetPosition, "%d", ((50+j*20)+i*250));  //dynamic y coordinate
+      yset = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_ysets[i].yData[j]);
+      xmlNewProp(yset, BAD_CAST "x", "200");
+      xmlNewProp(yset, BAD_CAST "y", yDataSetPosition);
+      xmlNewProp(yset, BAD_CAST "font-family", BAD_CAST "Verdana");
+    }
+
+
+
+    sprintf(cy, "%d", (90+i*250));  //dynamic y coordinate
+
     canvasChild=xmlNewChild(canvas, NULL, BAD_CAST "circle", NULL);
 
-    xmlNewProp(canvasChild, BAD_CAST "cx", BAD_CAST "60");
+    xmlNewProp(canvasChild, BAD_CAST "cx", BAD_CAST "100");
     xmlNewProp(canvasChild, BAD_CAST "cy", cy);
-    xmlNewProp(canvasChild, BAD_CAST "r", BAD_CAST "50");
+    xmlNewProp(canvasChild, BAD_CAST "r", BAD_CAST "70");
     xmlNewProp(canvasChild, BAD_CAST "stroke", BAD_CAST "black");
     xmlNewProp(canvasChild, BAD_CAST "stroke-width", BAD_CAST "2");
-    xmlNewProp(canvasChild, BAD_CAST "fill", BAD_CAST "blue");
+    xmlNewProp(canvasChild, BAD_CAST "fill", BAD_CAST "coral");
   }
-  free(cy);
+
+  //CHARTTITLE
 
   charttitle = xmlNewChild(canvas, NULL, BAD_CAST "text", chartTitle);
-  xmlNewProp(charttitle, BAD_CAST "x", BAD_CAST "10");
-  xmlNewProp(charttitle, BAD_CAST "y", BAD_CAST "130");
+  xmlNewProp(charttitle, BAD_CAST "x", BAD_CAST "130");
+  xmlNewProp(charttitle, BAD_CAST "y", BAD_CAST"55");
+  xmlNewProp(charttitle, BAD_CAST "transform", BAD_CAST "rotate(90 20,40)");
+  xmlNewProp(charttitle, BAD_CAST "font-family", BAD_CAST "Verdana");
+
+  //CHARTTITLE ENDS
 
   htmlSaveFileEnc(svgName, svg, "UTF-­8", 1);
 
   xmlFreeDoc(svg);
-
+  free(height);
+  free(cy);
 }
 
 void xsdValidation(char *xsdName, char *xmlName){
@@ -195,8 +223,8 @@ static void xmlWalk(xmlNode *a_node){
         yDataCounter++;
       }
 
-      if(yDataCounter == 12){   // THIS PART IS NOT DYNAMIC
-        yDataCounter == 0;
+      if(yDataCounter == 7){   // THIS PART IS NOT DYNAMIC
+        yDataCounter = 0;
         ySetCounter++;
       }
     }
@@ -230,11 +258,6 @@ void help(){
 }
 
 int main(int argc, char *argv[]) {
-  int j = 0;
-
-  for (j = 0; j < 10; j++) {
-
-  }
   char *xmlName;
   char *xsdName;
   char *svgName;
