@@ -39,8 +39,8 @@
             <xs:sequence>
               <xs:element name="ydata" type="xs:int" minOccurs="1" maxOccurs="unbounded"/>
             </xs:sequence>
-            <xs:attribute name="unit" type="xs:string" use="optional"/>
-            <xs:attribute name="name" type="xs:string" use="optional"/>
+            <xs:attribute name="unit" type="xs:string" use="required"/>
+            <xs:attribute name="name" type="xs:string" use="required"/>
             <xs:attribute name="showvalue" type="xs:string" use="optional"/>
             <xs:attribute name="fillcolor" type="xs:string" use="optional"/>
           </xs:complexType>

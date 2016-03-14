@@ -1,11 +1,12 @@
-//gcc project1.c -o project1.out -I/usr/include/libxml2 -lxml2
-//./project1.out chartgen -v validation.xsd -i chartgendata.xml -o abc.svg -t pie
+//gcc project1.c -o project1.out -I/usr/include/libxml2 -lxml2 -lm
+//./project1.out chartgen -v validation.xsd -i chartgendata.xml -o berkin.svg -t pie
 
 #include "stdio.h"
 #include "libxml/xmlschemastypes.h"
 #include "libxml/parser.h"
 #include "libxml/tree.h"
 #include "split.h"
+#include "math.h"
 
 #define KBLU  "\x1B[34m"  //BLUE
 #define KNRM  "\x1B[0m"   //BLACK
@@ -30,22 +31,23 @@ struct Xaxis{
 };
 
 struct Xset{
-  char *xData[12];  //not dynamic
+  char *xData[100];  //not dynamic
 };
 
 struct Yset{
   char *unit;
   char *name;
-  char showValue[3];
-  char fillColor[6];
-  char *yData[6];  //not dynamic, but it might be problem for us
+  char *showValue;
+  char *fillColor;
+  char *yData[100];  //not dynamic, but it might be problem for us
+  char *angles[100];
 };
 
 struct canvas svg_canvas;
 struct Yaxis svg_yaxis;
 struct Xaxis svg_xaxis;
 struct Xset svg_xset;
-struct Yset svg_ysets[6];  //not dynamic
+struct Yset svg_ysets[50];  //not dynamic
 
 int xmlFlag = FALSE;
 int xsdFlag = FALSE;
@@ -59,11 +61,47 @@ int yDataCounter = 0;
 int tempYDataCounter = 0;
 int xDataCounter = 0;
 int tempXDataCounter = 1;
+double totalValue = 0;
+double elementAngle = 0;
+double startAngle = 0;
+double endAngle = 0;
+char *pathText;
+
+void boxColors(xmlNodePtr colors,int j){
+  if(j == 0)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "lightcoral");
+  if(j == 1)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "lightseagreen");
+  if(j == 2)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "rosybrown");
+  if(j == 3)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "darkgreen");
+  if(j == 4)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "slategrey");
+  if(j == 5)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "sienna");
+  if(j == 6)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "brown");
+  if(j == 7)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "maroon");
+  if(j == 8)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "orangered");
+  if(j == 9)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "dodgerblue");
+  if(j == 10)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "chocolate");
+  if(j == 11)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "midnightblue");
+  if(j == 12)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "salmon");
+  if(j == 13)
+  xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "gold");
+}
 
 void createCircleSVG(char *svgName){
   xmlDocPtr svg = NULL;
   xmlNodePtr body = NULL;
-  xmlNodePtr charttitle = NULL, canvas = NULL, xset = NULL, yset = NULL, canvasChild = NULL, boxes = NULL, cities = NULL;  //canvas, root
+  xmlNodePtr charttitle = NULL, canvas = NULL, xset = NULL, yset = NULL, path = NULL, colors = NULL, cities = NULL;  //canvas, root
 
   svg = xmlNewDoc(BAD_CAST "1.0");
 
@@ -71,7 +109,7 @@ void createCircleSVG(char *svgName){
   xmlDocSetRootElement(svg, body);
 
   char *height = malloc(10);
-  sprintf(height,"%d",(atoi(svg_canvas.length) * (ySetCounter+2)));
+  sprintf(height,"%d",(atoi(svg_canvas.length) * (ySetCounter+1)));
 
   canvas = xmlNewChild(body, NULL, BAD_CAST"svg", NULL);
   xmlNewProp(canvas,BAD_CAST "xmlns","http://www.w3.org/2000/svg");
@@ -82,77 +120,83 @@ void createCircleSVG(char *svgName){
 
   int i = 0;
   int j = 0;
+  int k = 0;
   int firstcy = 0, lastcy = 0;
   char *cy = malloc(5);
   char *textPosition = malloc(5);
   char *boxPosition = malloc(5);
   char *cityPosition = malloc(5);
   char *cityTitlePosition = malloc(5);
-  for (i = 0; i < ySetCounter; i++) {   //how many circle?
 
-    sprintf(cityPosition, "%d", (30+i*250));  //dynamic y coordinate
+  for (i = 0; i < ySetCounter; i++) {   //how many circle?
+    totalValue = 0;
+    sprintf(cityPosition, "%d", (30+i*300));  //dynamic y coordinate
     cities = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_ysets[i].name);
-    xmlNewProp(cities, BAD_CAST "x", "260");
+    xmlNewProp(cities, BAD_CAST "x", "310");
     xmlNewProp(cities, BAD_CAST "y", cityPosition);
     xmlNewProp(cities, BAD_CAST "font-family", BAD_CAST "Verdana");
     xmlNewProp(cities, BAD_CAST "font-size", BAD_CAST "25");
     xmlNewProp(cities, BAD_CAST "fill", BAD_CAST "teal");
 
     for (j = 0; j < xDataCounter; j++) {  //PRINT MONTHS & VALUES & COLORS - XDATA & YDATA & COLORS
-      sprintf(textPosition, "%d", ((60+j*20)+i*250));  //dynamic y coordinate
+      sprintf(textPosition, "%d", ((60+j*20)+i*300));  //dynamic y coordinate
       xset = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_xset.xData[j]);
-      xmlNewProp(xset, BAD_CAST "x", "350");
+      xmlNewProp(xset, BAD_CAST "x", "400");
       xmlNewProp(xset, BAD_CAST "y", textPosition);
       xmlNewProp(xset, BAD_CAST "font-family", BAD_CAST "Verdana");
 
+      if(svg_ysets[i].showValue != NULL && strcmp(svg_ysets[i].showValue,"yes") == 0){
+        yset = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_ysets[i].yData[j]);
+        xmlNewProp(yset, BAD_CAST "x", "250");
+        xmlNewProp(yset, BAD_CAST "y", textPosition);
+        xmlNewProp(yset, BAD_CAST "font-family", BAD_CAST "Verdana");
+      }
 
-      yset = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_ysets[i].yData[j]);
-      xmlNewProp(yset, BAD_CAST "x", "200");
-      xmlNewProp(yset, BAD_CAST "y", textPosition);
-      xmlNewProp(yset, BAD_CAST "font-family", BAD_CAST "Verdana");
+      sprintf(boxPosition, "%d", ((50+j*20)+i*300));  //dynamic y coordinate
+      colors = xmlNewChild(canvas, NULL, BAD_CAST "rect", NULL);
+      xmlNewProp(colors, BAD_CAST "x", "325");
+      xmlNewProp(colors, BAD_CAST "y", boxPosition);
+      xmlNewProp(colors, BAD_CAST "width", "40");
+      xmlNewProp(colors, BAD_CAST "height", "15");
+      boxColors(colors,j);
 
-      sprintf(boxPosition, "%d", ((50+j*20)+i*250));  //dynamic y coordinate
-      boxes = xmlNewChild(canvas, NULL, BAD_CAST "rect", NULL);
-      xmlNewProp(boxes, BAD_CAST "x", "275");
-      xmlNewProp(boxes, BAD_CAST "y", boxPosition);
-      xmlNewProp(boxes, BAD_CAST "width", "40");
-      xmlNewProp(boxes, BAD_CAST "height", "10");
-      if(j == 0)
-      xmlNewProp(boxes, BAD_CAST "fill", BAD_CAST "lightcoral");
-      if(j == 1)
-      xmlNewProp(boxes, BAD_CAST "fill", BAD_CAST "lightseagreen");
-      if(j == 2)
-      xmlNewProp(boxes, BAD_CAST "fill", BAD_CAST "rosybrown");
-      if(j == 3)
-      xmlNewProp(boxes, BAD_CAST "fill", BAD_CAST "darkgreen");
-      if(j == 4)
-      xmlNewProp(boxes, BAD_CAST "fill", BAD_CAST "slategrey");
-      if(j == 5)
-      xmlNewProp(boxes, BAD_CAST "fill", BAD_CAST "sienna");
-      if(j == 6)
-      xmlNewProp(boxes, BAD_CAST "fill", BAD_CAST "brown");
+      sprintf(cy, "%d", (100+i*300));
+
+      totalValue = totalValue + atoi(svg_ysets[i].yData[j]);
     }
 
-    sprintf(cy, "%d", (100+i*250));  //dynamic y coordinate
 
-    canvasChild=xmlNewChild(canvas, NULL, BAD_CAST "circle", NULL);
+    for (k = 0; k < xDataCounter; k++) {
+      elementAngle = (atoi(svg_ysets[i].yData[k]) * 360) / totalValue;
+      startAngle = endAngle;
+      endAngle = startAngle + elementAngle;
+      int x1 = (125 + 90* cos(M_PI*startAngle/180));
+      int y1 = ((100+i*300) + 90* sin(M_PI*startAngle/180));
+      int x2 = (125 + 90* cos(M_PI*endAngle/180));
+      int y2 = ((100+i*300) + 90* sin(M_PI*endAngle/180));
+      pathText = malloc(256);
 
-    xmlNewProp(canvasChild, BAD_CAST "cx", BAD_CAST "100");
-    xmlNewProp(canvasChild, BAD_CAST "cy", cy);
-    xmlNewProp(canvasChild, BAD_CAST "r", BAD_CAST "70");
-    xmlNewProp(canvasChild, BAD_CAST "stroke", BAD_CAST "black");
-    xmlNewProp(canvasChild, BAD_CAST "stroke-width", BAD_CAST "2");
-    xmlNewProp(canvasChild, BAD_CAST "fill", BAD_CAST "coral");
+      if(elementAngle < 180)
+      sprintf(pathText, "M 125,%s  L %d,%d A 90,90 0 0,1 %d,%d z",cy,x1, y1, x2, y2);
+      else
+      sprintf(pathText, "M 125,%s  L %d,%d A 90,90 0 1,1 %d,%d z",cy,x1, y1, x2, y2);
+
+      path=xmlNewChild(canvas, NULL, BAD_CAST "path", NULL);
+
+      xmlNewProp(path, BAD_CAST "d", BAD_CAST pathText);
+      boxColors(path,k);
+    }
 
     if(i == 0)
     firstcy = atoi(cy);
     if(i == ySetCounter-1)
     lastcy = atoi(cy);
+    //YSET COUNTER ENDS
   }
 
   //CHARTTITLE
 
-  sprintf(cityTitlePosition, "%d", (lastcy-firstcy)/2);  //dynamic y coordinate
+  sprintf(cityTitlePosition, "%d", (lastcy+firstcy) /3);  //dynamic y coordinate
   charttitle = xmlNewChild(canvas, NULL, BAD_CAST "text", chartTitle);
   xmlNewProp(charttitle, BAD_CAST "x", BAD_CAST cityTitlePosition);
   xmlNewProp(charttitle, BAD_CAST "y", BAD_CAST"45");
@@ -244,9 +288,11 @@ static void xmlWalk(xmlNode *a_node){
             strcpy(svg_ysets[ySetCounter].name,(char*)attribute);
           }
           if(strcmp(NodeAttribute->name, "showvalue") == 0){
+            svg_ysets[ySetCounter].showValue = malloc(strlen((char*)attribute)+1);
             strcpy(svg_ysets[ySetCounter].showValue,(char*)attribute);
           }
           if(strcmp(NodeAttribute->name, "fillcolor") == 0){
+            svg_ysets[ySetCounter].fillColor = malloc(strlen((char*)attribute)+1);
             strcpy(svg_ysets[ySetCounter].fillColor,(char*)attribute);
           }
         }
