@@ -10,15 +10,15 @@
 
 #define KBLU  "\x1B[34m"  //BLUE
 #define KNRM  "\x1B[0m"   //BLACK
-#define TRUE 1
-#define FALSE 0
+#define TRUE 1            //BOOLEAN
+#define FALSE 0           //BOOLEAN
 
-char *chartTitle;
+char *chartTitle; //chartTitle keeps Monthly Sales for example
 
 struct canvas{
   char *length;
   char *width;
-  char backcolor[6];
+  char *backcolor;
 };
 
 struct Yaxis{
@@ -27,11 +27,11 @@ struct Yaxis{
 
 struct Xaxis{
   char *name;
-  char forecolor[6];
+  char *forecolor;
 };
 
 struct Xset{
-  char *xData[100];  //not dynamic
+  char *xData[100];
 };
 
 struct Yset{
@@ -39,35 +39,34 @@ struct Yset{
   char *name;
   char *showValue;
   char *fillColor;
-  char *yData[100];  //not dynamic, but it might be problem for us
-  char *angles[100];
+  char *yData[100];
 };
 
-struct canvas svg_canvas;
-struct Yaxis svg_yaxis;
-struct Xaxis svg_xaxis;
-struct Xset svg_xset;
-struct Yset svg_ysets[50];  //not dynamic
+struct canvas svg_canvas;    //svg_canvas.length  svg_canvas.width  svg_canvas.backcolor
+struct Yaxis svg_yaxis;      //svg_yaxis.name
+struct Xaxis svg_xaxis;      //svg_xaxis.name  svg_xaxis.forecolor
+struct Xset svg_xset;        //svg_xset.xData[FOR STRUCTURE]
+struct Yset svg_ysets[50];   //svg_ysets.unit  svg_ysets.name  svg_ysets.showValue  svg_ysets.fillColor  svg_ysets.yData[FOR STRUCTURE]
 
-int xmlFlag = FALSE;
-int xsdFlag = FALSE;
-int SVGEntered = FALSE;
-int circleSVG = FALSE;
-int barSVG = FALSE;
-int lineSVG = FALSE;
+int xmlFlag = FALSE;         //is XML readed?
+int xsdFlag = FALSE;         //is XSD readed?
+int SVGEntered = FALSE;      //is SVG readed?  -o command
+int circleSVG = FALSE;       //is Type given?  -t pie
+int barSVG = FALSE;          //is Type given?  -t bar
+int lineSVG = FALSE;         //is Type given?  -t line
 
-int ySetCounter = 0;
-int yDataCounter = 0;
-int tempYDataCounter = 0;
-int xDataCounter = 0;
-int tempXDataCounter = 1;
-double totalValue = 0;
-double elementAngle = 0;
-double startAngle = 0;
-double endAngle = 0;
-char *pathText;
+int ySetCounter = 0;         //ySet counts set of Y. For example chartgendata.xml has 2 Y set, so this variable = 2
+int yDataCounter = 0;        //This variable to control number of Ydata. It return 0 after Yset done. *DONT USE IT IN FOR STRUCTURE!*
+int tempYDataCounter = 0;    //This variable keeps number of YData quantity. It's 6 on the chartgendata.xml
+int xDataCounter = 0;        //This variable keeps number of XData quantity. It's 6 on the chartgendata.xml. YOU CAN USE IN FOR STRUCTURE
+int tempXDataCounter = 1;    //This variable compare Ydata quantity and Xdata quantity in the XMLWalk function. *DONT USE IT IN FOR STRUCTURE!*
 
-void boxColors(xmlNodePtr colors,int j){
+
+xmlDocPtr pieSVG = NULL; //MY SVG FILE, CREATE YOUR OWN
+xmlNodePtr body = NULL;  //BODY IS ROOT
+xmlNodePtr canvas = NULL, charttitle = NULL, xset = NULL, yset = NULL, path = NULL, colors = NULL, cities = NULL; //SVG PARTS
+
+void boxColors(xmlNodePtr colors,int j){  //COLORS
   if(j == 0)
   xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "lightcoral");
   if(j == 1)
@@ -98,60 +97,70 @@ void boxColors(xmlNodePtr colors,int j){
   xmlNewProp(colors, BAD_CAST "fill", BAD_CAST "gold");
 }
 
-void createCircleSVG(char *svgName){
-  xmlDocPtr svg = NULL;
-  xmlNodePtr body = NULL;
-  xmlNodePtr charttitle = NULL, canvas = NULL, xset = NULL, yset = NULL, path = NULL, colors = NULL, cities = NULL;  //canvas, root
+void createPieSVG(char *svgName){
+  double totalValue = 0;    //Total value of Ydata on each Yset, using for calculating angle
+  double elementAngle = 0;  //Angle of each Ydata
+  double startAngle = 0;    //Starting position of each pie corner
+  double endAngle = 0;      //Ending position of each pie corner
+  char *pathText;           //Path attribute
+  char *height = malloc(5); //Canvas's height | width
+  char *cy = malloc(5);     //Path's middle point on Y axis.
+  char *textPosition = malloc(5);     //This variable sets yData and xData's position
+  char *boxPosition = malloc(5);      //This variable sets colored boxes's position
+  char *cityPosition = malloc(5);     //This variable sets city name's position
+  char *chartTitlePosition = malloc(5);  //This variable sets charttitle's position
+  int i = 0;                //ySetCounter
+  int j = 0;                //xDataCounter == tempYDataCounter
+  int k = 0;                //xDataCounter == tempYDataCounter -- DOES DIFFERENT THINGS
+  int firstcy = 0, lastcy = 0;        //Path's middle coordinates. They created because i wanted to make charttitle on the middle
 
-  svg = xmlNewDoc(BAD_CAST "1.0");
+  pieSVG = xmlNewDoc(BAD_CAST "1.0");    //Creating SVG
 
-  body = xmlNewNode(NULL, BAD_CAST"body");
-  xmlDocSetRootElement(svg, body);
+  body = xmlNewNode(NULL, BAD_CAST"body");    //Creating new node, our root
+  xmlDocSetRootElement(pieSVG, body);        //Root assigned
 
-  char *height = malloc(10);
-  sprintf(height,"%d",(atoi(svg_canvas.length) * (ySetCounter+1)));
+  //-------------------CANVAS PART------------------
+  sprintf(height,"%d",(atoi(svg_canvas.length) * (ySetCounter+1)));  //Dynamic canvas size
 
-  canvas = xmlNewChild(body, NULL, BAD_CAST"svg", NULL);
-  xmlNewProp(canvas,BAD_CAST "xmlns","http://www.w3.org/2000/svg");
-  xmlNewProp(canvas, BAD_CAST "height", height);
-  xmlNewProp(canvas, BAD_CAST "width", height);
-  xmlNewProp(canvas, BAD_CAST "fill", svg_canvas.backcolor);
+  canvas = xmlNewChild(body, NULL, BAD_CAST"svg", NULL);             //Child of body (root)
+  xmlNewProp(canvas,BAD_CAST "xmlns","http://www.w3.org/2000/svg");             //I dont know :D
+  xmlNewProp(canvas, BAD_CAST "height", height);             //Dynamic height
+  xmlNewProp(canvas, BAD_CAST "width", height);             //Dynamic width
+  //--------------------DONE-----------------------
 
+  for (i = 0; i < ySetCounter; i++) {   //How many circle?
+    totalValue = 0;                           //Total value of yData sets 0 for another ySet
 
-  int i = 0;
-  int j = 0;
-  int k = 0;
-  int firstcy = 0, lastcy = 0;
-  char *cy = malloc(5);
-  char *textPosition = malloc(5);
-  char *boxPosition = malloc(5);
-  char *cityPosition = malloc(5);
-  char *cityTitlePosition = malloc(5);
-
-  for (i = 0; i < ySetCounter; i++) {   //how many circle?
-    totalValue = 0;
-    sprintf(cityPosition, "%d", (30+i*300));  //dynamic y coordinate
-    cities = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_ysets[i].name);
-    xmlNewProp(cities, BAD_CAST "x", "310");
-    xmlNewProp(cities, BAD_CAST "y", cityPosition);
-    xmlNewProp(cities, BAD_CAST "font-family", BAD_CAST "Verdana");
-    xmlNewProp(cities, BAD_CAST "font-size", BAD_CAST "25");
-    xmlNewProp(cities, BAD_CAST "fill", BAD_CAST "teal");
+    //-------------------CITY PART------------------
+    sprintf(cityPosition, "%d", (30+i*300));  //Dynamic city name position
+    cities = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_ysets[i].name);   //City names
+    xmlNewProp(cities, BAD_CAST "x", "310");                                  //X Coordinate = 310
+    xmlNewProp(cities, BAD_CAST "y", cityPosition);                           //Y Coordinate = DYNAMIC
+    xmlNewProp(cities, BAD_CAST "font-family", BAD_CAST "Verdana");           //Font type
+    xmlNewProp(cities, BAD_CAST "font-size", BAD_CAST "25");                  //Font size
+    xmlNewProp(cities, BAD_CAST "fill", BAD_CAST "teal");                     //Font color
+    //--------------------DONE-----------------------
 
     for (j = 0; j < xDataCounter; j++) {  //PRINT MONTHS & VALUES & COLORS - XDATA & YDATA & COLORS
-      sprintf(textPosition, "%d", ((60+j*20)+i*300));  //dynamic y coordinate
-      xset = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_xset.xData[j]);
-      xmlNewProp(xset, BAD_CAST "x", "400");
-      xmlNewProp(xset, BAD_CAST "y", textPosition);
-      xmlNewProp(xset, BAD_CAST "font-family", BAD_CAST "Verdana");
 
-      if(svg_ysets[i].showValue != NULL && strcmp(svg_ysets[i].showValue,"yes") == 0){
-        yset = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_ysets[i].yData[j]);
-        xmlNewProp(yset, BAD_CAST "x", "250");
-        xmlNewProp(yset, BAD_CAST "y", textPosition);
-        xmlNewProp(yset, BAD_CAST "font-family", BAD_CAST "Verdana");
+      //-------------------XDATA PART------------------
+      sprintf(textPosition, "%d", ((60+j*20)+i*300));                       //Dynamic xData position
+      xset = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_xset.xData[j]); //xData values
+      xmlNewProp(xset, BAD_CAST "x", "400");                                //X Coordinate = 400
+      xmlNewProp(xset, BAD_CAST "y", textPosition);                         //Y Coordinate = DYNAMIC
+      xmlNewProp(xset, BAD_CAST "font-family", BAD_CAST "Verdana");         //Font type
+      //--------------------DONE-----------------------
+
+      //-------------------YDATA PART------------------
+      if(svg_ysets[i].showValue != NULL && strcmp(svg_ysets[i].showValue,"yes") == 0){  //if showvalue is equal yes
+        yset = xmlNewChild(canvas, NULL, BAD_CAST "text", svg_ysets[i].yData[j]);       //YData values
+        xmlNewProp(yset, BAD_CAST "x", "250");                                          //X Coordinate = 250
+        xmlNewProp(yset, BAD_CAST "y", textPosition);                                   //Y Coordinate = DYNAMIC
+        xmlNewProp(yset, BAD_CAST "font-family", BAD_CAST "Verdana");                   //Font type
       }
+      //--------------------DONE-----------------------
 
+      //-------------------BOX PART------------------
       sprintf(boxPosition, "%d", ((50+j*20)+i*300));  //dynamic y coordinate
       colors = xmlNewChild(canvas, NULL, BAD_CAST "rect", NULL);
       xmlNewProp(colors, BAD_CAST "x", "325");
@@ -159,18 +168,19 @@ void createCircleSVG(char *svgName){
       xmlNewProp(colors, BAD_CAST "width", "40");
       xmlNewProp(colors, BAD_CAST "height", "15");
       boxColors(colors,j);
+      //--------------------DONE-----------------------
 
-      sprintf(cy, "%d", (100+i*300));
 
-      totalValue = totalValue + atoi(svg_ysets[i].yData[j]);
+      totalValue = totalValue + atoi(svg_ysets[i].yData[j]);  //Total value of ySet
     }
 
-
-    for (k = 0; k < xDataCounter; k++) {
-      elementAngle = (atoi(svg_ysets[i].yData[k]) * 360) / totalValue;
-      startAngle = endAngle;
-      endAngle = startAngle + elementAngle;
-      int x1 = (125 + 90* cos(M_PI*startAngle/180));
+    //-------------------PIE PART------------------
+    for (k = 0; k < xDataCounter; k++) {        //ySet or xSet number
+      sprintf(cy, "%d", (100+i*300));           //Dynamic path's center
+      elementAngle = (atoi(svg_ysets[i].yData[k]) * 360) / totalValue;     //Angles for eich one yData
+      startAngle = endAngle;                                               //Pie's starting corner
+      endAngle = startAngle + elementAngle;                                //Pie's ending corner
+      int x1 = (125 + 90* cos(M_PI*startAngle/180));                       //slices
       int y1 = ((100+i*300) + 90* sin(M_PI*startAngle/180));
       int x2 = (125 + 90* cos(M_PI*endAngle/180));
       int y2 = ((100+i*300) + 90* sin(M_PI*endAngle/180));
@@ -186,35 +196,79 @@ void createCircleSVG(char *svgName){
       xmlNewProp(path, BAD_CAST "d", BAD_CAST pathText);
       boxColors(path,k);
     }
+    //--------------------DONE-----------------------
 
+
+    //TWO CENTER OF PATH'S MIDDLE FOR CHATTITLE
     if(i == 0)
     firstcy = atoi(cy);
     if(i == ySetCounter-1)
     lastcy = atoi(cy);
-    //YSET COUNTER ENDS
+
   }
 
-  //CHARTTITLE
+  //-------------------CHARTTITLE PART------------------
 
-  sprintf(cityTitlePosition, "%d", (lastcy+firstcy) /3);  //dynamic y coordinate
+  sprintf(chartTitlePosition, "%d", (lastcy+firstcy) /3);  //dynamic y coordinate
   charttitle = xmlNewChild(canvas, NULL, BAD_CAST "text", chartTitle);
-  xmlNewProp(charttitle, BAD_CAST "x", BAD_CAST cityTitlePosition);
+  xmlNewProp(charttitle, BAD_CAST "x", BAD_CAST chartTitlePosition);
   xmlNewProp(charttitle, BAD_CAST "y", BAD_CAST"45");
   xmlNewProp(charttitle, BAD_CAST "transform", BAD_CAST "rotate(90 20,40)");
   xmlNewProp(charttitle, BAD_CAST "font-family", BAD_CAST "Verdana");
 
-  //CHARTTITLE ENDS
+  //--------------------DONE-----------------------
 
+  htmlSaveFileEnc(svgName, pieSVG, "UTF-­8", 1);
+
+  xmlFreeDoc(pieSVG);
+  free(height);
+  free(cy);
+  free(textPosition);
+  free(boxPosition);
+  free(cityPosition);
+  free(chartTitlePosition);
+  free(height);
+}
+
+void createLineSVG(char *svgName){
+  //TODO Line SVG
+
+  /*  //SVG's DOCUMENT STARTS HERE
+  svg = xmlNewDoc(BAD_CAST "1.0");
+
+  body = xmlNewNode(NULL, BAD_CAST"body");
+  xmlDocSetRootElement(svg, body);
+  */
+
+
+  /*
   htmlSaveFileEnc(svgName, svg, "UTF-­8", 1);
 
   xmlFreeDoc(svg);
-  free(height);
-  free(cy);
+  */
+}
+
+void createBarSVG(char *svgName){
+  //TODO Bar SVG
+
+  /*  //SVG's DOCUMENT STARTS HERE
+  svg = xmlNewDoc(BAD_CAST "1.0");
+
+  body = xmlNewNode(NULL, BAD_CAST"body");
+  xmlDocSetRootElement(svg, body);
+  */
+
+
+  /*
+  htmlSaveFileEnc(svgName, svg, "UTF-­8", 1);
+
+  xmlFreeDoc(svg);
+  */
 }
 
 void xsdValidation(char *xsdName, char *xmlName){
   char xmlLint[30];
-  strcpy(xmlLint,"xmllint --noout --schema ");
+  strcpy(xmlLint,"xmllint --noout --schema "); //TERMINAL COMMAND. IT REQURIES  [sudo] apt-get install libxml2-utils
 
   char *terminalCommand = malloc(strlen(xmlLint) + strlen(xsdName) + strlen(xmlName) + 2);
   if(terminalCommand != NULL){
@@ -249,10 +303,11 @@ static void xmlWalk(xmlNode *a_node){
       }
 
       if(strcmp(currentNode->name, "backcolor")==0){
+        svg_canvas.backcolor = malloc(strlen(currentNode->children->content) + 1);
         strcpy(svg_canvas.backcolor,currentNode->children->content);
       }
 
-      if(strcmp(currentNode-> name, "name") == 0 /*&& strcmp(currentNode -> next-> name, "name")==0*/){
+      if(strcmp(currentNode-> name, "name")==0){
         if(strcmp(currentNode -> parent -> name , "Yaxis") == 0){
           svg_yaxis.name = malloc(strlen(currentNode->children->content) + 1);
           strcpy(svg_yaxis.name,currentNode->children->content);
@@ -264,6 +319,7 @@ static void xmlWalk(xmlNode *a_node){
       }
 
       if(strcmp(currentNode->name, "forecolor")==0){
+        svg_xaxis.forecolor = malloc(strlen(currentNode->children->content) + 1);
         strcpy(svg_xaxis.forecolor,currentNode->children->content);
       }
 
@@ -338,7 +394,7 @@ void help(){
   printf("%s\n","1- 'chartgen -i <input filename>'");
   printf("%s\n","2- 'chartgen -o <output filename>'");
   printf("%s\n","3- 'chartgen -v <xsd validation file>'");
-  printf("%s\n","4- 'chartgen -t <type>'");
+  printf("%s\n","4- 'chartgen -t <type>' they are 'pie' 'bar' 'line'");
 }
 
 int main(int argc, char *argv[]) {
@@ -380,13 +436,13 @@ int main(int argc, char *argv[]) {
 
       if(strcmp(argv[i],"-t")==0){
         if(strcmp(argv[i+1],"line")==0){
-          printf("%s\n", "NOT READY");
+          lineSVG = 1;
         }
         if(strcmp(argv[i+1],"pie")==0){
           circleSVG = 1;
         }
         if(strcmp(argv[i+1],"bar")==0){
-          printf("%s\n", "NOT READY");
+          barSVG = 1;
         }
       }
 
@@ -408,9 +464,21 @@ int main(int argc, char *argv[]) {
   }
   //SVG OPERATIONS
   if(circleSVG == TRUE && SVGEntered == TRUE){
-    createCircleSVG(svgName);
+    createPieSVG(svgName);
     free(svgName);
   }
+
+  //TODO Add your codes below
+
+  /*if(lineSVG == TRUE && SVGEntered == TRUE){
+    createLineSVG(svgName);
+    free(svgName);
+  }*/
+
+  /*if(barSVG == TRUE && SVGEntered == TRUE){
+    createBarSVG(svgName);
+    free(svgName);
+  }*/
 
   if(xmlFlag == FALSE || xsdFlag == FALSE){
     printf("%s\n", "DONT FORGET TO WRITE CHARTGEN AT THE BEGINNING");
@@ -418,7 +486,7 @@ int main(int argc, char *argv[]) {
     printf("%s\n", "Check that you have given the XML in the code. XSD checks XML, if it isn't NULL\n");
     help();
   }
-  if(SVGEntered == FALSE || circleSVG == FALSE){
+  if(SVGEntered == FALSE || (circleSVG == FALSE && barSVG == FALSE && lineSVG == FALSE)){
     printf("%s\n", "DONT FORGET TO WRITE CHARTGEN AT THE BEGINNING");
     printf("%s\n", "Please give a output name with -o command");
     printf("%s\n", "If you given -o command, please check your input's -t part\n");
